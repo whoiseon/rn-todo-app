@@ -1,12 +1,21 @@
 import { useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+} from "react-native";
 import { themePalette } from "./lib/colors";
 
 export default function App() {
   const [working, setWorking] = useState(true);
+  const [text, setText] = useState("");
+
   const travel = () => setWorking(false);
   const work = () => setWorking(true);
+  const onChangeText = (payload) => setText(payload);
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -32,6 +41,15 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
+      <View>
+        <TextInput
+          value={text}
+          onChangeText={onChangeText}
+          placeholderTextColor={themePalette.lightgrey}
+          placeholder={working ? "Add a To Do" : "Where do you want to go?"}
+          style={styles.input}
+        />
+      </View>
     </View>
   );
 }
@@ -44,12 +62,20 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginTop: 100,
     gap: 32,
   },
   btnText: {
     fontSize: 32,
     fontWeight: "600",
+  },
+  input: {
+    backgroundColor: "white",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 24,
+    fontSize: 18,
   },
 });
