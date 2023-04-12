@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   StyleSheet,
@@ -7,8 +7,13 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  TouchableNativeFeedback,
+  Alert,
 } from "react-native";
 import { themePalette } from "./lib/colors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const STORAGE_KEY = "@toDos";
 
 export default function App() {
   const [working, setWorking] = useState(true);
@@ -19,7 +24,36 @@ export default function App() {
   const work = () => setWorking(true);
   const onChangeText = (payload) => setText(payload);
 
-  const addToDo = () => {
+  const saveToDo = async (toSave) => {
+    const todo = JSON.stringify(toSave);
+    await AsyncStorage.setItem(STORAGE_KEY, todo);
+  };
+
+  const loadToDo = async () => {
+    const todo = await AsyncStorage.getItem(STORAGE_KEY);
+    const parsedToDo = JSON.parse(todo);
+    setToDos(parsedToDo || {});
+  };
+
+  const onDelete = (key) => {
+    Alert.alert("Delete To Do", "Are you sure?", [
+      { text: "Cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          const deletedToDo = {
+            ...toDos,
+          };
+          delete deletedToDo[key];
+          setToDos(deletedToDo);
+          await saveToDo(deletedToDo);
+        },
+      },
+    ]);
+  };
+
+  const addToDo = async () => {
     if (text === "") return;
 
     // saveToDo
@@ -27,15 +61,19 @@ export default function App() {
       ...toDos,
       [Date.now()]: {
         text,
+        working,
         completed: false,
-        work: working,
       },
     };
 
     setToDos(newToDo);
-
+    await saveToDo(newToDo);
     setText("");
   };
+
+  useEffect(() => {
+    loadToDo();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -74,14 +112,16 @@ export default function App() {
         />
       </View>
       <ScrollView style={styles.toDoList}>
-        {Object.keys(toDos).map((key) => {
-          const toDo = toDos[key];
-          return (
+        {Object.keys(toDos).map((key) =>
+          toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDo.text}</Text>
+              <Text style={styles.toDoText}>{toDos[key].text}</Text>
+              <TouchableNativeFeedback onPress={() => onDelete(key)}>
+                <Text>❌</Text>
+              </TouchableNativeFeedback>
             </View>
-          );
-        })}
+          ) : null
+        )}
       </ScrollView>
     </View>
   );
@@ -118,8 +158,11 @@ const styles = StyleSheet.create({
     backgroundColor: themePalette.cardBg,
     paddingHorizontal: 20,
     paddingVertical: 24,
-    marginBottom: 16,
     borderRadius: 8,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   toDoText: {
     color: themePalette.white,
